@@ -1,0 +1,6 @@
+{
+  "name": "Daily Auto Expense Tracker",
+  "description": "A minimalist, premium high-contrast dark-mode web application for college students to log daily auto travel expenses, view smart analytics, and export travel reports as PDFs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
