@@ -48,8 +48,8 @@ import {
   fetchExpenses,
   addExpense,
   deleteExpense,
-  fetchMonthlyBudget,
-  saveMonthlyBudget
+  fetchUserSettings,
+  saveUserSettings
 } from "./dbService";
 import { getFirebaseAuth, getOrCreateUserId } from "./firebase";
 import { Expense } from "./types";
@@ -57,13 +57,10 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export default function App() {
-  // Theme state: defaults to dark (premium matte dark UI)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("theme");
     return saved !== "light";
   });
-
-  // Auth States
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
@@ -71,32 +68,25 @@ export default function App() {
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authActionLoading, setAuthActionLoading] = useState<boolean>(false);
-
-  // App Core States
   const [userId, setUserId] = useState<string>("");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState<boolean>(false);
   const [monthlyBudget, setMonthlyBudget] = useState<number>(2000);
   const [budgetInput, setBudgetInput] = useState<string>("2000");
   const [savingBudget, setSavingBudget] = useState<boolean>(false);
-
-  // Navigation State
+  const [defaultFare, setDefaultFare] = useState<string>("25");
+  const [defaultRoute, setDefaultRoute] = useState<string>("College → Home");
+  const [autoFillEnabled, setAutoFillEnabled] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "history" | "analytics" | "portal">("dashboard");
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
-
-  // Quick Logging Form States
   const [amountInput, setAmountInput] = useState<string>("");
   const [routeInput, setRouteInput] = useState<string>("");
-
-  // Filter States
   const [searchRoute, setSearchRoute] = useState<string>("");
   const [minAmount, setMinAmount] = useState<string>("");
   const [maxAmount, setMaxAmount] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false);
-
-  // Get current date string
   const getTodayString = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -105,17 +95,11 @@ export default function App() {
     return `${year}-${month}-${day}`;
   };
   const [dateInput, setDateInput] = useState<string>(getTodayString());
-
-  // Collapsed months tracker
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({});
-
-  // Toast notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const amountRef = useRef<HTMLInputElement>(null);
   const modalAmountRef = useRef<HTMLInputElement>(null);
-
-  // Apply dark mode class to html element
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDarkMode) {
@@ -124,8 +108,6 @@ export default function App() {
       root.classList.remove("dark");
     }
   }, [isDarkMode]);
-
-  // Load and subscribe to Firebase Auth
   useEffect(() => {
     try {
       const auth = getFirebaseAuth();
@@ -135,12 +117,12 @@ export default function App() {
         if (firebaseUser) {
           setUserId(firebaseUser.uid);
           loadUserExpenses(firebaseUser.uid);
-          loadUserBudget(firebaseUser.uid);
+          loadUserSettings(firebaseUser.uid);
         } else {
           const guestId = getOrCreateUserId();
           setUserId(guestId);
           loadUserExpenses(guestId);
-          loadUserBudget(guestId);
+          loadUserSettings(guestId);
         }
       });
       return () => unsubscribe();
@@ -149,11 +131,9 @@ export default function App() {
       const guestId = getOrCreateUserId();
       setUserId(guestId);
       loadUserExpenses(guestId);
-      loadUserBudget(guestId);
+      loadUserSettings(guestId);
     }
   }, []);
-
-  // Autofocus amount on tab change / modal open
   useEffect(() => {
     if (activeTab === "dashboard" && !loadingExpenses && !authLoading && amountRef.current) {
       amountRef.current.focus();
@@ -161,12 +141,18 @@ export default function App() {
   }, [activeTab, loadingExpenses, authLoading, user]);
 
   useEffect(() => {
-    if (isLogModalOpen && modalAmountRef.current) {
-      setTimeout(() => {
-        modalAmountRef.current?.focus();
-      }, 100);
+    if (isLogModalOpen) {
+      if (autoFillEnabled) {
+        setAmountInput(prev => prev || defaultFare);
+        setRouteInput(prev => prev || defaultRoute);
+      }
+      if (modalAmountRef.current) {
+        setTimeout(() => {
+          modalAmountRef.current?.focus();
+        }, 100);
+      }
     }
-  }, [isLogModalOpen]);
+  }, [isLogModalOpen, autoFillEnabled, defaultFare, defaultRoute]);
 
   const toggleTheme = () => {
     setIsDarkMode(prev => {
@@ -189,18 +175,26 @@ export default function App() {
     }
   };
 
-  const loadUserBudget = async (uid: string) => {
+  const loadUserSettings = async (uid: string) => {
     try {
-      const b = await fetchMonthlyBudget(uid);
-      setMonthlyBudget(b);
-      setBudgetInput(b.toString());
+      const settings = await fetchUserSettings(uid);
+      setMonthlyBudget(settings.monthlyBudget);
+      setBudgetInput(settings.monthlyBudget.toString());
+      setDefaultFare(settings.defaultFare ?? "25");
+      setDefaultRoute(settings.defaultRoute ?? "College → Home");
+      setAutoFillEnabled(settings.autoFillEnabled ?? false);
+
+      if (settings.autoFillEnabled) {
+        setAmountInput(prev => prev || (settings.defaultFare ?? "25"));
+        setRouteInput(prev => prev || (settings.defaultRoute ?? "College → Home"));
+      }
     } catch (err) {
-      console.error("Error loading budget:", err);
+      console.error("Error loading settings:", err);
     }
   };
 
-  const handleUpdateBudget = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const parsed = parseInt(budgetInput);
     if (isNaN(parsed) || parsed <= 0) {
       showToast("Please enter a valid budget amount", "error");
@@ -208,11 +202,17 @@ export default function App() {
     }
     setSavingBudget(true);
     try {
-      await saveMonthlyBudget(userId, parsed);
+      await saveUserSettings(userId, {
+        userId,
+        monthlyBudget: parsed,
+        defaultFare,
+        defaultRoute,
+        autoFillEnabled
+      });
       setMonthlyBudget(parsed);
-      showToast(`Monthly budget updated to ₹${parsed}`, "success");
+      showToast(`Settings updated successfully`, "success");
     } catch (err) {
-      showToast("Failed to save budget", "error");
+      showToast("Failed to save settings", "error");
     } finally {
       setSavingBudget(false);
     }
@@ -222,8 +222,6 @@ export default function App() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
-
-  // Auth Operations
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -268,11 +266,9 @@ export default function App() {
     try {
       const auth = getFirebaseAuth();
       const provider = new GoogleAuthProvider();
-      // Use redirect flow to avoid popup-blocked errors
       const result = await signInWithPopup(auth, provider);
 
       showToast("Signed in successfully!", "success");
-      // Page will redirect — no further code runs here
     } catch (err: any) {
       setAuthError("Google sign-in failed. Please try again or use Email/Password.");
       showToast("Google login could not complete.", "error");
@@ -291,8 +287,6 @@ export default function App() {
       showToast("Error signing out", "error");
     }
   };
-
-  // Fast-log Presets
   const PRESET_ROUTES = [
     "Home to College",
     "College to Home",
@@ -314,12 +308,8 @@ export default function App() {
       .filter(route => !PRESET_ROUTES.includes(route))
       .slice(0, 3);
   };
-
-  // Log expense
   const handleLogExpense = async (e: React.FormEvent, isModal: boolean = false) => {
     e.preventDefault();
-
-    // Default expense set to ₹100 if empty
     let finalAmount = 100;
     const currentInput = isModal ? amountInput : amountInput;
     if (amountInput.trim() !== "") {
@@ -337,10 +327,8 @@ export default function App() {
     try {
       const newExp = await addExpense(userId, finalAmount, finalRoute, finalDate);
       setExpenses(prev => [newExp, ...prev]);
-
-      // Reset input fields but preserve date
-      setAmountInput("");
-      setRouteInput("");
+      setAmountInput(autoFillEnabled ? defaultFare : "");
+      setRouteInput(autoFillEnabled ? defaultRoute : "");
       setIsLogModalOpen(false);
       showToast(`Logged ₹${finalAmount} for "${finalRoute}"`, "success");
 
@@ -361,28 +349,21 @@ export default function App() {
       showToast("Failed to delete entry", "error");
     }
   };
-
-  // Filtering Logic
   const getFilteredExpenses = () => {
     return expenses.filter(e => {
-      // 1. Search term
       if (searchRoute.trim() !== "") {
         const routeMatch = e.route.toLowerCase().includes(searchRoute.toLowerCase());
         if (!routeMatch) return false;
       }
-      // 2. Minimum amount
       if (minAmount.trim() !== "") {
         if (e.amount < parseFloat(minAmount)) return false;
       }
-      // 3. Maximum amount
       if (maxAmount.trim() !== "") {
         if (e.amount > parseFloat(maxAmount)) return false;
       }
-      // 4. Start date
       if (startDate.trim() !== "") {
         if (e.date < startDate) return false;
       }
-      // 5. End date
       if (endDate.trim() !== "") {
         if (e.date > endDate) return false;
       }
@@ -391,8 +372,6 @@ export default function App() {
   };
 
   const filteredExpenses = getFilteredExpenses();
-
-  // Grouping filtered expenses by Month
   const getExpensesByMonth = (list: Expense[]) => {
     const grouped: Record<string, Expense[]> = {};
     list.forEach(e => {
@@ -415,8 +394,6 @@ export default function App() {
   };
 
   const groupedExpenses = getExpensesByMonth(filteredExpenses);
-
-  // Selected current month stats (always computed from real unfiltered list for dashboard fidelity)
   const activeMonthName = new Date().toLocaleString("default", {
     month: "long",
     year: "numeric"
@@ -426,8 +403,6 @@ export default function App() {
   const totalSpentActiveMonth = activeMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
   const totalSpentOverall = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalRidesCount = expenses.length;
-
-  // Calculated stats
   const activeMonthRidesCount = activeMonthExpenses.length;
   const averageFareActiveMonth = activeMonthRidesCount > 0 ? Math.round(totalSpentActiveMonth / activeMonthRidesCount) : 0;
   const budgetPercentage = Math.min(Math.round((totalSpentActiveMonth / monthlyBudget) * 100), 100);
@@ -436,10 +411,7 @@ export default function App() {
   const toggleMonth = (monthName: string) => {
     setCollapsedMonths(prev => ({ ...prev, [monthName]: !prev[monthName] }));
   };
-
-  // SVG Chart Computations (Spending Trend & Route Analysis)
   const getSpendingChartData = () => {
-    // Show total spend over past 6 calendar months
     const last6Months: string[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -449,13 +421,12 @@ export default function App() {
 
     const allGrouped = getExpensesByMonth(expenses);
     const dataPoints = last6Months.map(mLabel => {
-      // Find matching group by checking start of label
       const matchingKey = Object.keys(allGrouped).find(key => key.toLowerCase().includes(mLabel.split(" ")[0].toLowerCase()));
       const sum = matchingKey ? allGrouped[matchingKey].reduce((s, exp) => s + exp.amount, 0) : 0;
       return { month: mLabel.split(" ")[0], amount: sum };
     });
 
-    const maxAmt = Math.max(...dataPoints.map(d => d.amount), 500); // minimum scale limit 500
+    const maxAmt = Math.max(...dataPoints.map(d => d.amount), 500);
     return { dataPoints, maxAmt };
   };
 
@@ -469,54 +440,38 @@ export default function App() {
     return Object.entries(routeSums)
       .map(([route, total]) => ({ route, total }))
       .sort((a, b) => b.total - a.total)
-      .slice(0, 5); // top 5 routes
+      .slice(0, 5);
   };
 
   const { dataPoints: trendData, maxAmt: trendMax } = getSpendingChartData();
   const topRouteData = getRouteChartData();
-
-  // Generate professionally formatted PDF report
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
       const pageHeight = doc.internal.pageSize.height;
       const pageWidth = doc.internal.pageSize.width;
-
-      // Header Banner
       doc.setFillColor(11, 15, 25);
       doc.rect(0, 0, pageWidth, 42, "F");
-
-      // App Title/Brand
       doc.setTextColor(255, 255, 255);
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(22);
       doc.text("AUTO TRAVEL EXPENSE REPORT", 14, 20);
-
-      // Subtitle
-      doc.setTextColor(16, 185, 129); // Accent (#10B981)
+      doc.setTextColor(16, 185, 129);
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(10);
       doc.text("PREMIUM DAILY AUTO EXPENSE TRACKER FOR STUDENTS", 14, 27);
-
-      // Metadata info on right side
       doc.setTextColor(148, 163, 184);
       doc.setFontSize(9);
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - 14, 18, { align: "right" });
       doc.text(`User ID: ${user ? user.email : "Guest Session"}`, pageWidth - 14, 25, { align: "right" });
       doc.text(`Total Records: ${expenses.length}`, pageWidth - 14, 32, { align: "right" });
-
-      // Title below header
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(14);
       doc.setFont("Helvetica", "bold");
       doc.text("Travel Financial Summary", 14, 52);
-
-      // Summary Grid Boxes
       const boxW = (pageWidth - 28 - 6) / 2;
       const boxH = 22;
       const startY = 57;
-
-      // Box 1: Total Spent This Month
       doc.setDrawColor(226, 232, 240);
       doc.setFillColor(248, 250, 252);
       doc.rect(14, startY, boxW, boxH, "FD");
@@ -527,8 +482,6 @@ export default function App() {
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(14);
       doc.text(`Rs. ${totalSpentActiveMonth.toLocaleString()}`, 18, startY + 15);
-
-      // Box 2: Total Overall Spend
       doc.rect(14 + boxW + 6, startY, boxW, boxH, "FD");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(8);
@@ -536,14 +489,10 @@ export default function App() {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.text(`Rs. ${totalSpentOverall.toLocaleString()}`, 14 + boxW + 10, startY + 15);
-
-      // Table Heading
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(14);
       doc.setFont("Helvetica", "bold");
       doc.text("Chronological Auto Travel Logs", 14, 91);
-
-      // Map filtered or all expenses to table rows
       const tableRows = (filteredExpenses.length > 0 ? filteredExpenses : expenses).map((e, index) => {
         const dateObj = new Date(e.date);
         const formattedDate = isNaN(dateObj.getTime())
@@ -561,8 +510,6 @@ export default function App() {
           `Rs. ${e.amount.toLocaleString()}`
         ];
       });
-
-      // Generate Table using autotable
       autoTable(doc, {
         startY: 96,
         head: [['S. No.', 'Date', 'Route / Travel Note', 'Fare Amount']],
@@ -608,8 +555,6 @@ export default function App() {
           );
         }
       });
-
-      // Save PDF
       doc.save(`AutoPay_Travel_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
       showToast("PDF report exported successfully!", "success");
     } catch (err) {
@@ -629,8 +574,6 @@ export default function App() {
 
   return (
     <div id="app-container" className="min-h-screen bg-[#FAFAFA] text-[#111827] dark:bg-[#0B0F19] dark:text-white flex flex-col antialiased transition-colors duration-300">
-
-      {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -652,13 +595,9 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Main Premium Navbar */}
       <nav id="main-nav" className="sticky top-0 z-40 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-md border-b border-[#E5E7EB] dark:border-[#1E293B] transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-
-            {/* Logo Group */}
             <div className="flex items-center gap-3">
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -673,8 +612,6 @@ export default function App() {
                 <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block font-medium -mt-0.5">Commute Expense Ledger</span>
               </div>
             </div>
-
-            {/* Desktop Navigation Link Tabs */}
             {user && (
               <div className="hidden md:flex items-center gap-1 bg-[#FAFAFA] dark:bg-[#121826]/60 p-1 rounded-xl border border-[#E5E7EB] dark:border-[#1E293B]">
                 <button
@@ -715,8 +652,6 @@ export default function App() {
                 </button>
               </div>
             )}
-
-            {/* Quick Actions Theme Toggle & Out */}
             <div className="flex items-center gap-2">
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -742,8 +677,6 @@ export default function App() {
           </div>
         </div>
       </nav>
-
-      {/* Main Core Container */}
       <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6 pb-24 md:pb-12">
 
         {authLoading ? (
@@ -752,8 +685,6 @@ export default function App() {
             <p className="text-xs font-semibold tracking-wider font-mono">ESTABLISHING ENCRYPTED STUDENT CHANNEL...</p>
           </div>
         ) : !user ? (
-
-          /* UNAUTHENTICATED SCREEN (Linear style) */
           <div className="max-w-md w-full mx-auto py-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -771,8 +702,6 @@ export default function App() {
                   Daily auto fares tracked accurately. Synchronized securely in cloud partition or run entirely locally.
                 </p>
               </div>
-
-              {/* Login/Signup Selector */}
               <div className="flex rounded-xl bg-[#FAFAFA] dark:bg-[#0B0F19] p-1 mb-6 border border-[#E5E7EB] dark:border-[#1E293B]">
                 <button
                   onClick={() => setAuthTab("signin")}
@@ -793,8 +722,6 @@ export default function App() {
                   Register
                 </button>
               </div>
-
-              {/* Email Form */}
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 {authError && (
                   <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[11px] leading-snug flex items-start gap-2">
@@ -858,8 +785,6 @@ export default function App() {
                   )}
                 </motion.button>
               </form>
-
-              {/* Divider */}
               <div className="relative flex items-center justify-center my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-[#E5E7EB] dark:border-[#1E293B]"></div>
@@ -868,8 +793,6 @@ export default function App() {
                   Federated Sync
                 </span>
               </div>
-
-              {/* Google Log In Button */}
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 type="button"
@@ -885,11 +808,7 @@ export default function App() {
             </motion.div>
           </div>
         ) : (
-
-          /* AUTHENTICATED PORTAL (Apple / Vercel layout) */
           <>
-
-            {/* Beautiful Tab View Selector (for responsive desktop or mobile native layout) */}
             <div className="md:hidden flex items-center justify-between bg-white dark:bg-[#121826] px-4 py-3 rounded-2xl border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#10B981]" />
@@ -901,11 +820,7 @@ export default function App() {
                 {expenses.length} Commutes
               </span>
             </div>
-
-            {/* View Tab Containers */}
             <AnimatePresence mode="wait">
-
-              {/* TAB 1: DASHBOARD */}
               {activeTab === "dashboard" && (
                 <motion.div
                   key="dashboard-view"
@@ -914,10 +829,7 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   className="space-y-6"
                 >
-                  {/* Top Premium Card Grid */}
                   <div className="grid grid-cols-1 gap-4">
-
-                    {/* Spent Month Card */}
                     <motion.div
                       whileHover={{ y: -3 }}
                       className="rounded-2xl p-5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden transition-all duration-300"
@@ -934,8 +846,6 @@ export default function App() {
                           {totalSpentActiveMonth.toLocaleString("en-IN")}
                         </span>
                       </div>
-
-                      {/* Interactive budget linear gauge */}
                       <div className="mt-3">
                         <div className="flex items-center justify-between text-[10px] text-[#6B7280] dark:text-[#94A3B8] mb-1 font-mono font-semibold">
                           <span>Budget Progress</span>
@@ -957,11 +867,7 @@ export default function App() {
                     </motion.div>
 
                   </div>
-
-                  {/* Form & Preset Layout (Desktop Side-by-Side or Responsive Column Layout) */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                    {/* Log Form Box */}
                     <div className="lg:col-span-2 rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden">
                       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800/50">
                         <div className="w-6 h-6 rounded-md bg-[#10B981]/10 text-[#10B981] flex items-center justify-center">
@@ -972,8 +878,6 @@ export default function App() {
 
                       <form onSubmit={(e) => handleLogExpense(e, false)} className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-                          {/* Amount */}
                           <div className="space-y-1.5">
                             <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Fare Amount</label>
                             <div className="relative">
@@ -989,8 +893,6 @@ export default function App() {
                             </div>
                             <span className="text-[9px] text-[#6B7280] dark:text-[#94A3B8] block leading-tight">Defaults to ₹100 if empty</span>
                           </div>
-
-                          {/* Route Note */}
                           <div className="space-y-1.5">
                             <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Route / COMMUTE NOTE</label>
                             <div className="relative">
@@ -1007,8 +909,6 @@ export default function App() {
                             </div>
                             <span className="text-[9px] text-[#6B7280] dark:text-[#94A3B8] block leading-tight">Defaults to &quot;Auto Ride&quot;</span>
                           </div>
-
-                          {/* Date */}
                           <div className="space-y-1.5">
                             <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Commute Date</label>
                             <div className="relative">
@@ -1025,8 +925,6 @@ export default function App() {
                           </div>
 
                         </div>
-
-                        {/* Presets Grid */}
                         <div className="space-y-2 pt-1">
                           <span className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-widest font-mono block">Preset Amounts:</span>
                           <div className="flex flex-wrap gap-2">
@@ -1045,8 +943,6 @@ export default function App() {
                             ))}
                           </div>
                         </div>
-
-                        {/* Route Chips */}
                         <div className="space-y-2">
                           <span className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-widest font-mono block">Standard College Routes:</span>
                           <div className="flex flex-wrap gap-1.5">
@@ -1063,8 +959,6 @@ export default function App() {
                                 {rOpt}
                               </button>
                             ))}
-
-                            {/* Dynamic Routes from previous entries */}
                             {getDynamicRouteSuggestions().map(rOpt => (
                               <button
                                 key={rOpt}
@@ -1080,8 +974,6 @@ export default function App() {
                             ))}
                           </div>
                         </div>
-
-                        {/* Submit */}
                         <div className="flex justify-end pt-2">
                           <motion.button
                             whileTap={{ scale: 0.98 }}
@@ -1095,8 +987,6 @@ export default function App() {
 
                       </form>
                     </div>
-
-                    {/* Quick Stats Summary / Recent commutes */}
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm flex flex-col gap-4">
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 pb-3">
                         <h3 className="text-xs font-bold uppercase tracking-wider font-mono text-[#111827] dark:text-white flex items-center gap-1.5">
@@ -1143,8 +1033,6 @@ export default function App() {
                   </div>
                 </motion.div>
               )}
-
-              {/* TAB 2: HISTORY LOGS */}
               {activeTab === "history" && (
                 <motion.div
                   key="history-view"
@@ -1153,7 +1041,6 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   className="space-y-6"
                 >
-                  {/* Top Heading Actions Bar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h2 className="text-xl font-bold font-display tracking-tight text-[#111827] dark:text-white">Travel History Ledgers</h2>
@@ -1187,8 +1074,6 @@ export default function App() {
                       </motion.button>
                     </div>
                   </div>
-
-                  {/* Collapsible Filter Panel */}
                   <AnimatePresence>
                     {isFilterPanelOpen && (
                       <motion.div
@@ -1212,8 +1097,6 @@ export default function App() {
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5">
-
-                            {/* Route Search */}
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Route Search</label>
                               <div className="relative">
@@ -1227,8 +1110,6 @@ export default function App() {
                                 />
                               </div>
                             </div>
-
-                            {/* Min Fare */}
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Min Fare (₹)</label>
                               <input
@@ -1239,8 +1120,6 @@ export default function App() {
                                 className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#FAFAFA] dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] text-[#111827] dark:text-white focus:outline-none focus:border-[#10B981] font-mono"
                               />
                             </div>
-
-                            {/* Max Fare */}
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Max Fare (₹)</label>
                               <input
@@ -1251,8 +1130,6 @@ export default function App() {
                                 className="w-full rounded-lg px-2.5 py-1.5 text-xs bg-[#FAFAFA] dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] text-[#111827] dark:text-white focus:outline-none focus:border-[#10B981] font-mono"
                               />
                             </div>
-
-                            {/* Start Date */}
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">From Date</label>
                               <input
@@ -1262,8 +1139,6 @@ export default function App() {
                                 className="w-full rounded-lg px-2 py-1.5 text-xs bg-[#FAFAFA] dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] text-[#111827] dark:text-white focus:outline-none [color-scheme:light] dark:[color-scheme:dark]"
                               />
                             </div>
-
-                            {/* End Date */}
                             <div className="space-y-1">
                               <label className="text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">To Date</label>
                               <input
@@ -1279,8 +1154,6 @@ export default function App() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-
-                  {/* Expense Records Area */}
                   {filteredExpenses.length === 0 ? (
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-16 text-center border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm flex flex-col items-center justify-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center mb-1">
@@ -1313,7 +1186,6 @@ export default function App() {
                             id={`month-group-${monthName.replace(/\s+/g, "-")}`}
                             className="rounded-2xl bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] overflow-hidden shadow-sm transition-all"
                           >
-                            {/* Month Header Section */}
                             <button
                               onClick={() => toggleMonth(monthName)}
                               className="w-full flex items-center justify-between px-5 py-4 transition-all hover:bg-slate-50 dark:hover:bg-[#1C2538]/30 border-b border-[#E5E7EB] dark:border-[#1E293B]"
@@ -1337,8 +1209,6 @@ export default function App() {
                                 </span>
                               </div>
                             </button>
-
-                            {/* Log Records Row List */}
                             <AnimatePresence initial={false}>
                               {!isCollapsed && (
                                 <motion.div
@@ -1363,9 +1233,7 @@ export default function App() {
                                           id={`expense-row-${expense.id}`}
                                           className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/50 dark:hover:bg-[#1E293B]/20 transition-all group"
                                         >
-                                          {/* Time Date Route detail */}
                                           <div className="flex items-center gap-4 min-w-0 pr-4">
-                                            {/* Beautiful Date Badge */}
                                             <div className="border rounded-xl p-2 text-center shrink-0 min-w-[54px] bg-[#FAFAFA] dark:bg-[#0B0F19] border-[#E5E7EB] dark:border-[#1E293B]">
                                               <span className="block text-[9px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase leading-none font-mono">
                                                 {formattedDateDay}
@@ -1374,8 +1242,6 @@ export default function App() {
                                                 {formattedDateNum}
                                               </span>
                                             </div>
-
-                                            {/* Commute note detail */}
                                             <div className="min-w-0">
                                               <span className="text-xs font-bold text-[#111827] dark:text-white block truncate leading-snug">
                                                 {expense.route || "Auto Ride Commute"}
@@ -1385,8 +1251,6 @@ export default function App() {
                                               </span>
                                             </div>
                                           </div>
-
-                                          {/* Actions Amount */}
                                           <div className="flex items-center gap-3.5 shrink-0">
                                             <span className="text-sm font-extrabold text-[#111827] dark:text-white font-mono">
                                               ₹{expense.amount.toLocaleString("en-IN")}
@@ -1417,8 +1281,6 @@ export default function App() {
                   )}
                 </motion.div>
               )}
-
-              {/* TAB 3: ANALYTICS & TRENDS */}
               {activeTab === "analytics" && (
                 <motion.div
                   key="analytics-view"
@@ -1427,15 +1289,12 @@ export default function App() {
                   exit={{ opacity: 0, y: -15 }}
                   className="space-y-6"
                 >
-                  {/* Top Header */}
                   <div>
                     <h2 className="text-xl font-bold font-display tracking-tight text-[#111827] dark:text-white">Commuter Financial Intelligence</h2>
                     <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] mt-1">Visualize fare patterns, top routes, and monitor daily transit spending limits.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    {/* SVG Line / Bar Spend Trend Chart (Premium Custom Code) */}
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/50 mb-4">
                         <span className="text-xs font-bold uppercase tracking-wider font-mono text-[#111827] dark:text-white flex items-center gap-1.5">
@@ -1446,22 +1305,16 @@ export default function App() {
                           Interactive Curve
                         </span>
                       </div>
-
-                      {/* Pure SVG Animated Line Chart */}
                       <div className="relative w-full h-56 pt-4">
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 400 160">
-                          {/* Y-Axis guide lines */}
                           <line x1="0" y1="20" x2="400" y2="20" stroke="currentColor" className="text-slate-100 dark:text-slate-800/30" strokeDasharray="3 3" />
                           <line x1="0" y1="70" x2="400" y2="70" stroke="currentColor" className="text-slate-100 dark:text-slate-800/30" strokeDasharray="3 3" />
                           <line x1="0" y1="120" x2="400" y2="120" stroke="currentColor" className="text-slate-100 dark:text-slate-800/30" strokeDasharray="3 3" strokeWidth="1" />
-
-                          {/* Curve Path */}
                           {(() => {
                             const padding = 35;
                             const spacing = (400 - padding * 2) / 5;
                             const points = trendData.map((d, index) => {
                               const x = padding + index * spacing;
-                              // Scale y between y=120 (amount=0) and y=20 (amount=trendMax)
                               const y = 120 - ((d.amount / (trendMax || 1)) * 100);
                               return { x, y, label: d.month, amount: d.amount };
                             });
@@ -1476,21 +1329,14 @@ export default function App() {
 
                             return (
                               <>
-                                {/* Fill Area */}
                                 {dArea && <path d={dArea} fill="url(#chart-gradient)" opacity="0.15" className="text-[#10B981]" />}
-
-                                {/* Gradient Definition */}
                                 <defs>
                                   <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor="#10B981" />
                                     <stop offset="100%" stopColor="transparent" />
                                   </linearGradient>
                                 </defs>
-
-                                {/* Main Curve stroke */}
                                 {dPath && <path d={dPath} fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-
-                                {/* Interactive Dot Nodes */}
                                 {points.map((p, i) => (
                                   <g key={i} className="group/node">
                                     <circle
@@ -1502,7 +1348,6 @@ export default function App() {
                                       strokeWidth="2"
                                       className="transition-all duration-200 cursor-pointer hover:r-6"
                                     />
-                                    {/* Text values */}
                                     <text
                                       x={p.x}
                                       y={p.y - 10}
@@ -1511,7 +1356,6 @@ export default function App() {
                                     >
                                       ₹{p.amount}
                                     </text>
-                                    {/* X-axis Month Label */}
                                     <text
                                       x={p.x}
                                       y="140"
@@ -1531,8 +1375,6 @@ export default function App() {
                         <p className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] font-medium">Hover over nodes to see month aggregate values</p>
                       </div>
                     </div>
-
-                    {/* SVG Top Routes Chart */}
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/50 mb-4">
                         <span className="text-xs font-bold uppercase tracking-wider font-mono text-[#111827] dark:text-white flex items-center gap-1.5">
@@ -1578,8 +1420,6 @@ export default function App() {
                     </div>
 
                   </div>
-
-                  {/* Budget Allocation Info Banner Card */}
                   <div className="rounded-2xl bg-white dark:bg-[#121826] p-5 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-start gap-3.5">
                       <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500 shrink-0 border border-amber-500/15">
@@ -1602,8 +1442,6 @@ export default function App() {
                   </div>
                 </motion.div>
               )}
-
-              {/* TAB 4: PORTAL SETTINGS & AUTH */}
               {activeTab === "portal" && (
                 <motion.div
                   key="portal-view"
@@ -1613,8 +1451,6 @@ export default function App() {
                   className="space-y-6"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    {/* Student Identity Card */}
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm relative overflow-hidden">
                       <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/50 mb-5">
                         <div className="w-6 h-6 rounded-md bg-[#10B981]/10 text-[#10B981] flex items-center justify-center">
@@ -1634,8 +1470,6 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Info Partition Logs */}
                       <div className="space-y-3 bg-[#FAFAFA] dark:bg-[#0B0F19] p-4 rounded-xl border border-[#E5E7EB] dark:border-[#1E293B] font-mono text-[11px] text-[#6B7280] dark:text-[#94A3B8]">
                         <div className="flex items-center justify-between">
                           <span>User Partition UID:</span>
@@ -1663,8 +1497,6 @@ export default function App() {
                         </div>
                       )}
                     </div>
-
-                    {/* Budget configuration settings */}
                     <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm">
                       <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/50 mb-5">
                         <div className="w-6 h-6 rounded-md bg-[#10B981]/10 text-[#10B981] flex items-center justify-center">
@@ -1673,7 +1505,7 @@ export default function App() {
                         <h3 className="text-sm font-bold tracking-tight text-[#111827] dark:text-white">Commuter Preferences</h3>
                       </div>
 
-                      <form onSubmit={handleUpdateBudget} className="space-y-4">
+                      <form onSubmit={handleUpdateSettings} className="space-y-4">
                         <div className="space-y-1.5">
                           <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Set Monthly Commute Budget (₹)</label>
                           <div className="relative">
@@ -1710,14 +1542,73 @@ export default function App() {
                         </div>
                       </form>
                     </div>
+                    <div className="rounded-2xl bg-white dark:bg-[#121826] p-6 border border-[#E5E7EB] dark:border-[#1E293B] shadow-sm mt-6">
+                      <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/50 mb-5">
+                        <div className="w-6 h-6 rounded-md bg-[#10B981]/10 text-[#10B981] flex items-center justify-center">
+                          <Settings className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-sm font-bold tracking-tight text-[#111827] dark:text-white">Expense Defaults</h3>
+                      </div>
+
+                      <form onSubmit={handleUpdateSettings} className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Default Fare (₹)</label>
+                          <input
+                            type="text"
+                            value={defaultFare}
+                            onChange={(e) => setDefaultFare(e.target.value)}
+                            placeholder="25"
+                            className="w-full rounded-xl px-4 py-2.5 text-xs font-semibold font-mono border bg-[#FAFAFA] dark:bg-[#0B0F19] border-[#E5E7EB] dark:border-[#1E293B] text-[#111827] dark:text-white focus:outline-none focus:border-[#10B981]"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Default Route / Travel Note</label>
+                          <input
+                            type="text"
+                            value={defaultRoute}
+                            onChange={(e) => setDefaultRoute(e.target.value)}
+                            placeholder="College → Home"
+                            className="w-full rounded-xl px-4 py-2.5 text-xs font-semibold border bg-[#FAFAFA] dark:bg-[#0B0F19] border-[#E5E7EB] dark:border-[#1E293B] text-[#111827] dark:text-white focus:outline-none focus:border-[#10B981]"
+                          />
+                        </div>
+
+                        <div 
+                          onClick={() => setAutoFillEnabled(!autoFillEnabled)}
+                          className="flex items-center justify-between mt-5 cursor-pointer group"
+                        >
+                          <span className="text-xs font-semibold text-[#111827] dark:text-white transition-colors">Auto-fill when adding expense</span>
+                          <div className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${autoFillEnabled ? 'bg-[#10B981]' : 'bg-gray-200 dark:bg-slate-700'}`}>
+                            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${autoFillEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </div>
+                        </div>
+                        
+                        <div className="pt-2 flex justify-end">
+                          <motion.button
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
+                            disabled={savingBudget}
+                            className="px-5 py-2.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#10B981]/10"
+                          >
+                            {savingBudget ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Save Defaults
+                              </>
+                            )}
+                          </motion.button>
+                        </div>
+                      </form>
+                    </div>
+
 
                   </div>
                 </motion.div>
               )}
 
             </AnimatePresence>
-
-            {/* Mobile Native Navigation Tab Bar (fixed at bottom on mobile screen dimensions) */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121826] border-t border-[#E5E7EB] dark:border-[#1E293B] px-4 py-2 z-40 shadow-xl flex items-center justify-around transition-colors">
               <button
                 onClick={() => setActiveTab("dashboard")}
@@ -1736,8 +1627,6 @@ export default function App() {
                 <ListFilter className="w-4 h-4" />
                 <span className="text-[9px] font-semibold tracking-wider uppercase">Logs</span>
               </button>
-
-              {/* Mobile FAB Sticky Add Expense Button (Sleek Apple style floating button in bottom tab center) */}
               <div className="relative -top-5">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -1767,8 +1656,6 @@ export default function App() {
                 <span className="text-[9px] font-semibold tracking-wider uppercase">Portal</span>
               </button>
             </div>
-
-            {/* Mobile Slide-Up Dialog Modal for Quick Commute Logging */}
             <AnimatePresence>
               {isLogModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs">
@@ -1779,7 +1666,6 @@ export default function App() {
                     transition={{ type: "spring", damping: 25, stiffness: 350 }}
                     className="w-full max-w-md bg-white dark:bg-[#121826] rounded-t-3xl border-t border-[#E5E7EB] dark:border-[#1E293B] p-6 shadow-2xl relative"
                   >
-                    {/* Drag bar indicator */}
                     <div className="w-12 h-1 bg-[#E5E7EB] dark:bg-[#1E293B] rounded-full mx-auto mb-4"></div>
 
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800/50">
@@ -1796,8 +1682,6 @@ export default function App() {
                     </div>
 
                     <form onSubmit={(e) => handleLogExpense(e, true)} className="space-y-4 pb-4">
-
-                      {/* Amount */}
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Fare Amount</label>
                         <div className="relative">
@@ -1813,8 +1697,6 @@ export default function App() {
                         </div>
                         <span className="text-[9px] text-[#6B7280] dark:text-[#94A3B8] block">Defaults to ₹100 if empty</span>
                       </div>
-
-                      {/* Route Note */}
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Route Name</label>
                         <div className="relative">
@@ -1830,8 +1712,6 @@ export default function App() {
                           />
                         </div>
                       </div>
-
-                      {/* Date */}
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider font-mono">Commute Date</label>
                         <div className="relative">
@@ -1846,8 +1726,6 @@ export default function App() {
                           />
                         </div>
                       </div>
-
-                      {/* Quick Select Chips */}
                       <div className="space-y-1.5 pt-1">
                         <span className="text-[9px] font-bold text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-widest font-mono block">Select Fare:</span>
                         <div className="flex flex-wrap gap-2">
@@ -1866,8 +1744,6 @@ export default function App() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Log Action Button */}
                       <motion.button
                         whileTap={{ scale: 0.98 }}
                         type="submit"
@@ -1886,8 +1762,6 @@ export default function App() {
           </>
         )}
       </main>
-
-      {/* Footer (Desktop / Large Screens) */}
       <footer id="main-footer" className="mt-auto py-6 border-t border-[#E5E7EB] dark:border-[#1E293B] bg-white dark:bg-[#0B0F19] hidden md:block transition-all">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-xs text-[#6B7280] dark:text-[#94A3B8]">

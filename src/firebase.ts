@@ -34,7 +34,6 @@ export function getFirebaseApp(): FirebaseApp {
 export function getFirestoreDb(): Firestore {
   if (!db) {
     const firebaseApp = getFirebaseApp();
-    // Use the specific firestoreDatabaseId if configured
     const databaseId = config.firestoreDatabaseId;
     
     try {
@@ -57,8 +56,6 @@ export function getFirebaseAuth(): Auth {
   }
   return auth;
 }
-
-// Generate or retrieve a persistent user ID for local partition of data
 export function getOrCreateUserId(): string {
   const STORAGE_KEY = "daily_auto_expense_user_id";
   let userId = localStorage.getItem(STORAGE_KEY);

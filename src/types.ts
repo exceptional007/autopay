@@ -3,11 +3,14 @@ export interface Expense {
   userId: string;
   amount: number;
   route: string;
-  date: string; // YYYY-MM-DD
-  createdAt: number; // timestamp
+  date: string;
+  createdAt: number;
 }
 
 export interface UserSettings {
   userId: string;
   monthlyBudget: number;
+  defaultFare?: string;
+  defaultRoute?: string;
+  autoFillEnabled?: boolean;
 }
