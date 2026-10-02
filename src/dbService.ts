@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "./firebase";
 import { Expense, UserSettings } from "./types";
+import { syncExpenseToStats, syncExistingLocalExpenses } from "./services/statsService";
 const LOCAL_EXPENSES_KEY = "daily_auto_expenses_local";
 const LOCAL_SETTINGS_KEY = "daily_auto_settings_local";
 function getLocalExpenses(userId: string): Expense[] {
@@ -65,10 +66,13 @@ export async function fetchExpenses(userId: string): Promise<Expense[]> {
       });
     });
     saveLocalExpenses(userId, expenses);
+    syncExistingLocalExpenses(userId, expenses);
     return expenses;
   } catch (error) {
     console.warn("Firestore fetch error, falling back to localStorage:", error);
-    return getLocalExpenses(userId);
+    const local = getLocalExpenses(userId);
+    syncExistingLocalExpenses(userId, local);
+    return local;
   }
 }
 
@@ -98,6 +102,14 @@ export async function addExpense(
     const currentLocal = getLocalExpenses(userId);
     saveLocalExpenses(userId, [newExpense, ...currentLocal]);
 
+    syncExpenseToStats({
+      userIdHash: userId,
+      expenseId: newExpense.id,
+      amount: newExpense.amount,
+      date: newExpense.date,
+      createdAt: newExpense.createdAt
+    });
+
     return newExpense;
   } catch (error) {
     console.warn("Firestore write error, falling back to localStorage:", error);
@@ -108,6 +120,15 @@ export async function addExpense(
     };
     const currentLocal = getLocalExpenses(userId);
     saveLocalExpenses(userId, [newExpense, ...currentLocal]);
+
+    syncExpenseToStats({
+      userIdHash: userId,
+      expenseId: newExpense.id,
+      amount: newExpense.amount,
+      date: newExpense.date,
+      createdAt: newExpense.createdAt
+    });
+
     return newExpense;
   }
 }

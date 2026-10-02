@@ -1,0 +1,75 @@
+{
+  "name": "AutoPay — Daily Expense & Commute Ledger",
+  "short_name": "AutoPay",
+  "description": "Two-second daily expense & auto commute tracker with instant logging, budget tracking, and spending analytics.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0F19",
+  "theme_color": "#10B981",
+  "categories": ["finance", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Expense",
+      "short_name": "Quick Log",
+      "description": "Quickly log today's commute or small expense",
+      "url": "/app?action=quick-add",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "View Ledger",
+      "short_name": "Ledger",
+      "description": "Inspect monthly expense history and logs",
+      "url": "/app?tab=history",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Monthly Analytics",
+      "short_name": "Analytics",
+      "description": "View monthly spending trends and route breakdowns",
+      "url": "/app?tab=analytics",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

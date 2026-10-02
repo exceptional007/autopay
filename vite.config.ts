@@ -3,9 +3,30 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+import {handleApiRequest} from './src/server/apiMiddleware';
+
+function apiBackendPlugin() {
+  return {
+    name: 'autopay-backend-api',
+    configureServer(server: any) {
+      server.middlewares.use(async (req: any, res: any, next: any) => {
+        if (req.url && req.url.startsWith('/api/')) {
+          try {
+            const handled = await handleApiRequest(req, res);
+            if (handled) return;
+          } catch (err) {
+            console.error('[API Middleware Error]:', err);
+          }
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), apiBackendPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -17,6 +38,25 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('firestore')) {
+                return 'vendor-firestore';
+              }
+              if (id.includes('firebase')) {
+                return 'vendor-firebase-core';
+              }
+              if (id.includes('motion')) {
+                return 'vendor-motion';
+              }
+            }
+          },
+        },
+      },
     },
   };
 });

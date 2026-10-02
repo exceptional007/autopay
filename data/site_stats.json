@@ -1,0 +1,24 @@
+{
+  "visitors": {
+    "totalVisits": 2,
+    "countingUnit": "qualifying landing visits",
+    "sinceDate": "October 2026",
+    "sessions": {
+      "sess_browser_99998888": 1790934999561,
+      "sess_1790935651500_zh9v53i2": 1790935653585
+    }
+  },
+  "metrics": {
+    "totalUsers": 8,
+    "totalExpenseRecords": 107,
+    "totalExpensesAmount": 10249,
+    "recordsThisMonth": 1,
+    "recordsLast30Days": 31,
+    "currency": "INR",
+    "timezone": "Asia/Kolkata",
+    "lastUpdated": "2026-10-02T16:49:56.186Z",
+    "source": "firestore_live_aggregates"
+  },
+  "users": {},
+  "expenseIds": {}
+}
