@@ -49,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({
   return (
     <footer className="bg-white dark:bg-[#0B0F19] border-t border-[#E5E7EB] dark:border-[#1E293B] py-12 text-[#6B7280] dark:text-[#94A3B8] font-mono text-xs transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-[#E5E7EB] dark:border-[#1E293B]">
+        <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left justify-between gap-6 pb-8 border-b border-[#E5E7EB] dark:border-[#1E293B]">
           
           {/* Brand */}
           <div className="flex items-center gap-3">
@@ -67,7 +67,7 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
 
           {/* Links */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-5 text-xs text-[#6B7280] dark:text-[#94A3B8]">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-5 text-xs text-[#6B7280] dark:text-[#94A3B8]">
             <a
               href="#the-leak"
               className="hover:text-[#111827] dark:hover:text-white transition-colors"
@@ -150,7 +150,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Credits, Privacy & Actual Visitor Counter */}
-        <div className="pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[11px] text-[#9CA3AF] dark:text-[#64748B]">
+        <div className="pt-6 flex flex-col items-center text-center md:flex-row md:items-center md:text-left justify-between gap-4 text-[11px] text-[#9CA3AF] dark:text-[#64748B]">
           <div>
             © {new Date().getFullYear()} AutoPay. Plain-text tracking for real commuters.
           </div>

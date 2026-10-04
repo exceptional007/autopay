@@ -6,8 +6,8 @@ export const HowItWorks: React.FC = () => {
     <section id="how-it-works" className="py-16 sm:py-24 border-b border-[#E5E7EB] dark:border-[#1E293B] bg-white dark:bg-[#0B0F19] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className="max-w-2xl mb-14">
+        {/* Section Header (Centered on mobile, left on desktop) */}
+        <div className="max-w-2xl mb-12 sm:mb-14 text-center md:text-left mx-auto md:mx-0">
           <div className="inline-flex items-center gap-2 font-mono text-[11px] font-bold text-[#10B981] uppercase tracking-wider mb-2">
             <span>[02 / Operational Simplicity]</span>
           </div>
@@ -23,8 +23,8 @@ export const HowItWorks: React.FC = () => {
         <div className="space-y-12 sm:space-y-16">
           
           {/* Step 01 */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-baseline border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
-            <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
+            <div className="lg:col-span-3 text-center lg:text-left">
               <span className="font-mono text-3xl sm:text-4xl font-bold text-[#10B981] font-tabular">
                 01/
               </span>
@@ -32,15 +32,15 @@ export const HowItWorks: React.FC = () => {
                 The Reflex
               </span>
             </div>
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-4 text-center lg:text-left">
               <h3 className="font-display text-xl sm:text-2xl font-bold text-[#111827] dark:text-white">
                 Log in two seconds flat.
               </h3>
               <p className="font-sans text-xs sm:text-sm text-[#6B7280] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Open AutoPay from your phone screen. Preset chips remember your regular routes: <span className="font-mono font-medium text-[#111827] dark:text-white">"Home to College"</span>, <span className="font-mono font-medium text-[#111827] dark:text-white">"College to Home"</span>. Auto-fill fills in your standard ₹25 fare automatically.
+                Open from your home screen. Preset route chips and standard ₹25 fares auto-fill with one tap — recorded before you cross the street.
               </p>
             </div>
-            <div className="lg:col-span-5 bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
+            <div className="lg:col-span-5 w-full max-w-md mx-auto lg:max-w-none bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
               <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider pb-2 border-b border-[#E5E7EB] dark:border-[#1E293B] flex justify-between">
                 <span>Quick Log Modal Preview</span>
                 <span className="text-[#10B981] font-bold">● Instant</span>
@@ -64,8 +64,8 @@ export const HowItWorks: React.FC = () => {
           </div>
 
           {/* Step 02 */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-baseline border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
-            <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
+            <div className="lg:col-span-3 text-center lg:text-left">
               <span className="font-mono text-3xl sm:text-4xl font-bold text-[#10B981] font-tabular">
                 02/
               </span>
@@ -73,15 +73,15 @@ export const HowItWorks: React.FC = () => {
                 The Index
               </span>
             </div>
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-4 text-center lg:text-left">
               <h3 className="font-display text-xl sm:text-2xl font-bold text-[#111827] dark:text-white">
                 Sorted by month, instantly searchable.
               </h3>
               <p className="font-sans text-xs sm:text-sm text-[#6B7280] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Every entry is grouped into clean monthly accordions. Filter by route to see how much the auto stand charged you this semester, or query specific date ranges and amounts. Made a mistake? Delete it in one tap.
+                Entries group into clean monthly accordions. Search any route to audit semester auto fares, or delete mistakes in one tap.
               </p>
             </div>
-            <div className="lg:col-span-5 bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
+            <div className="lg:col-span-5 w-full max-w-md mx-auto lg:max-w-none bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
               <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider pb-2 border-b border-[#E5E7EB] dark:border-[#1E293B] flex justify-between">
                 <span>Monthly Query System</span>
                 <span className="text-[#10B981] font-semibold">Active Filter</span>
@@ -104,8 +104,8 @@ export const HowItWorks: React.FC = () => {
           </div>
 
           {/* Step 03 */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-baseline border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
-            <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center border-t border-[#E5E7EB] dark:border-[#1E293B] pt-8">
+            <div className="lg:col-span-3 text-center lg:text-left">
               <span className="font-mono text-3xl sm:text-4xl font-bold text-[#10B981] font-tabular">
                 03/
               </span>
@@ -113,15 +113,15 @@ export const HowItWorks: React.FC = () => {
                 The Audit
               </span>
             </div>
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-4 text-center lg:text-left">
               <h3 className="font-display text-xl sm:text-2xl font-bold text-[#111827] dark:text-white">
-                Read your monthly picture in one glance.
+                Check your budget at a glance.
               </h3>
               <p className="font-sans text-xs sm:text-sm text-[#6B7280] dark:text-[#94A3B8] mt-2 leading-relaxed">
-                Watch your live budget progress bar. If your monthly budget is ₹2,000 and you have spent ₹1,420, you know exactly what is left for the remaining days. Export a crisp, official PDF statement anytime.
+                A live progress bar tracks your monthly limit against daily commutes. Download official PDF statements anytime with a single tap.
               </p>
             </div>
-            <div className="lg:col-span-5 bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
+            <div className="lg:col-span-5 w-full max-w-md mx-auto lg:max-w-none bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-4 rounded-xl font-mono text-xs shadow-sm">
               <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] uppercase tracking-wider pb-2 border-b border-[#E5E7EB] dark:border-[#1E293B] flex justify-between">
                 <span>Budget Status Meter</span>
                 <span className="text-[#10B981] font-bold">71% Utilized</span>
@@ -134,7 +134,7 @@ export const HowItWorks: React.FC = () => {
                   <span className="text-[#6B7280] dark:text-[#94A3B8]">Spent: ₹1,420</span>
                   <span className="font-bold text-[#10B981]">Remaining: ₹580</span>
                 </div>
-                <div className="text-[10px] text-[#10B981] font-semibold pt-1 flex items-center gap-1">
+                <div className="text-[10px] text-[#10B981] font-semibold pt-1 flex items-center gap-1 justify-center sm:justify-start">
                   <Check className="w-3.5 h-3.5" /> PDF Statement ready for 1-click download
                 </div>
               </div>

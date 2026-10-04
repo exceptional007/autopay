@@ -13,8 +13,8 @@ export const ProductFeatures: React.FC = () => {
     <section id="features" className="py-16 sm:py-24 border-b border-[#E5E7EB] dark:border-[#1E293B] bg-white dark:bg-[#0B0F19] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className="max-w-2xl mb-14">
+        {/* Section Header (Centered on mobile, left on desktop) */}
+        <div className="max-w-2xl mb-12 sm:mb-14 text-center md:text-left mx-auto md:mx-0">
           <div className="inline-flex items-center gap-2 font-mono text-[11px] font-bold text-[#10B981] uppercase tracking-wider mb-2">
             <span>[03 / The Tooling]</span>
           </div>
@@ -22,7 +22,7 @@ export const ProductFeatures: React.FC = () => {
             Built from the actual product, not marketing promises.
           </h2>
           <p className="font-sans text-sm sm:text-base text-[#6B7280] dark:text-[#94A3B8] mt-3 leading-relaxed">
-            Every feature shown here runs directly in AutoPay's existing codebase.
+            Every feature runs directly in AutoPay's live application.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export const ProductFeatures: React.FC = () => {
             </div>
 
             <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-              Export an official formatted PDF statement anytime from the Logs &amp; History view. Perfect for submitting expense reimbursements to parents, colleges, or employers.
+              Export an official formatted PDF statement anytime from Logs &amp; History — ready for parent, college, or workplace reimbursements.
             </p>
           </div>
 
@@ -223,7 +223,7 @@ export const ProductFeatures: React.FC = () => {
                   Firebase Firestore Cloud Sync
                 </span>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8]">
-                  Logs synchronize to your encrypted cloud partition so you can log on your phone and inspect analytics on your laptop.
+                  Syncs to your encrypted partition so mobile commute entries reflect instantly on your laptop.
                 </p>
               </div>
 
@@ -233,17 +233,17 @@ export const ProductFeatures: React.FC = () => {
                   Local-First Fail-safe (localStorage)
                 </span>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8]">
-                  If the network cuts out at the metro basement or auto stand, writes succeed locally without spinning loaders or errors.
+                  Writes succeed immediately when connectivity drops, syncing to the cloud once network returns.
                 </p>
               </div>
 
               <div className="p-3.5 bg-white dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl space-y-1">
                 <span className="font-bold text-[#111827] dark:text-white flex items-center gap-1.5">
                   <CheckCircle className="w-3.5 h-3.5 text-[#10B981]" />
-                  Google OAuth &amp; Email Auth
+                  Google &amp; Email Authentication
                 </span>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8]">
-                  One-tap sign-in with your Google account or college email. Guest sessions supported with unique student keys.
+                  One-tap sign-in with your Google account or college email, plus instant student guest sessions.
                 </p>
               </div>
             </div>

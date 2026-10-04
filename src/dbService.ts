@@ -12,7 +12,11 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "./firebase";
 import { Expense, UserSettings } from "./types";
-import { syncExpenseToStats, syncExistingLocalExpenses } from "./services/statsService";
+import { 
+  syncExpenseToStats, 
+  syncExpenseDeletionFromStats, 
+  syncExistingLocalExpenses 
+} from "./services/statsService";
 const LOCAL_EXPENSES_KEY = "daily_auto_expenses_local";
 const LOCAL_SETTINGS_KEY = "daily_auto_settings_local";
 function getLocalExpenses(userId: string): Expense[] {
@@ -134,9 +138,18 @@ export async function addExpense(
 }
 
 export async function deleteExpense(userId: string, expenseId: string): Promise<void> {
+  const currentLocal = getLocalExpenses(userId);
+  const targetExpense = currentLocal.find(e => e.id === expenseId);
+
+  if (targetExpense) {
+    syncExpenseDeletionFromStats({
+      amount: targetExpense.amount,
+      date: targetExpense.date,
+    });
+  }
+
   try {
     if (expenseId.startsWith("local_")) {
-      const currentLocal = getLocalExpenses(userId);
       const filtered = currentLocal.filter(e => e.id !== expenseId);
       saveLocalExpenses(userId, filtered);
       return;
@@ -145,12 +158,10 @@ export async function deleteExpense(userId: string, expenseId: string): Promise<
     const db = getFirestoreDb();
     const docRef = doc(db, "expenses", expenseId);
     await deleteDoc(docRef);
-    const currentLocal = getLocalExpenses(userId);
     const filtered = currentLocal.filter(e => e.id !== expenseId);
     saveLocalExpenses(userId, filtered);
   } catch (error) {
     console.warn("Firestore delete error, falling back to localStorage:", error);
-    const currentLocal = getLocalExpenses(userId);
     const filtered = currentLocal.filter(e => e.id !== expenseId);
     saveLocalExpenses(userId, filtered);
   }

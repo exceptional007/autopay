@@ -9,21 +9,21 @@ export const TrustNote: React.FC = () => {
         {/* Paper Notice Card */}
         <div className="bg-[#FAFAFA] dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] p-6 sm:p-8 rounded-2xl shadow-sm relative">
           
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-[#10B981]" />
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 mb-2">
+            <ShieldCheck className="w-5 h-5 text-[#10B981] shrink-0" />
             <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-[#10B981]">
               Honest Data &amp; Privacy Statement
             </h3>
           </div>
 
-          <h4 className="font-display text-xl sm:text-2xl font-bold text-[#111827] dark:text-white tracking-tight mb-4">
+          <h4 className="font-display text-xl sm:text-2xl font-bold text-[#111827] dark:text-white tracking-tight mb-4 text-center sm:text-left">
             Exactly what is stored. Nothing more.
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
             
             <div className="space-y-3 font-mono">
-              <div className="text-[11px] font-bold text-[#111827] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <div className="text-[11px] font-bold text-[#111827] dark:text-white uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1.5">
                 <Database className="w-3.5 h-3.5 text-[#10B981]" />
                 <span>Stored in Firebase Database</span>
               </div>
@@ -36,7 +36,7 @@ export const TrustNote: React.FC = () => {
             </div>
 
             <div className="space-y-3 font-mono">
-              <div className="text-[11px] font-bold text-[#111827] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <div className="text-[11px] font-bold text-[#111827] dark:text-white uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1.5">
                 <EyeOff className="w-3.5 h-3.5 text-[#10B981]" />
                 <span>What is NEVER accessed</span>
               </div>
@@ -50,7 +50,7 @@ export const TrustNote: React.FC = () => {
 
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#E5E7EB] dark:border-[#1E293B] font-mono text-[11px] text-[#6B7280] dark:text-[#94A3B8] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="mt-6 pt-4 border-t border-[#E5E7EB] dark:border-[#1E293B] font-mono text-[11px] text-[#6B7280] dark:text-[#94A3B8] flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-2">
             <span>Authentication handled securely via Firebase Auth.</span>
             <span className="text-[#10B981] font-semibold">✓ Safe for students and daily commuters</span>
           </div>

@@ -37,7 +37,8 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-14">
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-[#111827] dark:text-white tracking-tight">
             Lives right on your home screen.
             <span className="block mt-1 font-semibold text-[#10B981]">
@@ -45,7 +46,7 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
             </span>
           </h2>
           <p className="font-sans text-sm sm:text-base text-[#6B7280] dark:text-[#94A3B8] mt-4 leading-relaxed max-w-2xl mx-auto">
-            AutoPay is engineered as a Progressive Web App. It installs directly from your browser to your phone's home screen, opens full-screen in standalone mode, and launches in less than a second.
+            Installs directly from your browser to your home screen. Opens full-screen with instant launches and zero store downloads.
           </p>
         </div>
 
@@ -80,7 +81,7 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
             </div>
 
             {/* Custom CSS/SVG Built Phone (No stock images!) */}
-            <div className="relative w-[280px] sm:w-[310px] h-[580px] sm:h-[620px] bg-[#0F172A] rounded-[44px] p-3 shadow-2xl border-4 border-slate-700/80 select-none">
+            <div className="relative w-full max-w-[280px] sm:max-w-[310px] h-[560px] sm:h-[620px] bg-[#0F172A] rounded-[44px] p-3 shadow-2xl border-4 border-slate-700/80 select-none mx-auto">
 
               {/* Phone Speaker Pill / Dynamic Island */}
               <div className="absolute top-5 left-1/2 -translate-x-1/2 w-24 h-4 bg-black rounded-full z-30 flex items-center justify-end px-2">
@@ -330,22 +331,24 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
                 </div>
               ) : (
                 /* Status 3: Android / Chromium / Desktop Install */
-                <div className="space-y-3">
+                <div className="space-y-3 text-center sm:text-left">
                   <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-                    Install AutoPay right now in one tap. No Play Store account required, no storage bloat, instant offline shell.
+                    Install AutoPay in one tap. No app-store account, no storage bloat, instant offline access.
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={handleInstallClick}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-white font-mono text-xs sm:text-sm font-bold tracking-wide shadow-md shadow-[#10B981]/20 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Install AutoPay to Phone</span>
-                  </button>
+                  <div className="flex justify-center sm:justify-start">
+                    <button
+                      type="button"
+                      onClick={handleInstallClick}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-white font-mono text-xs sm:text-sm font-bold tracking-wide shadow-md shadow-[#10B981]/20 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Install AutoPay to Phone</span>
+                    </button>
+                  </div>
 
                   {installFeedback && (
-                    <div className="text-[11px] font-mono text-[#10B981] font-semibold">
+                    <div className="text-[11px] font-mono text-[#10B981] font-semibold text-center sm:text-left">
                       {installFeedback}
                     </div>
                   )}
@@ -354,18 +357,18 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
 
               {/* Manifest Shortcuts Feature Highlight */}
               <div className="pt-3 border-t border-[#E5E7EB] dark:border-[#1E293B] font-mono text-xs space-y-2">
-                <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] uppercase font-bold tracking-wider block">
+                <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] uppercase font-bold tracking-wider block text-center sm:text-left">
                   Configured App Shortcuts
                 </span>
-                <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-                  Long-press the AutoPay home screen icon anytime to trigger direct shortcuts without navigating menus:
+                <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed text-center sm:text-left">
+                  Long-press the home screen icon anytime for instant shortcuts:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-                  <div className="p-2.5 bg-slate-50 dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl flex items-center gap-2">
+                  <div className="p-2.5 bg-slate-50 dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl flex items-center justify-center sm:justify-start gap-2">
                     <span className="text-[#10B981] font-bold">1.</span>
                     <span className="font-semibold text-[#111827] dark:text-white">Quick Log Expense</span>
                   </div>
-                  <div className="p-2.5 bg-slate-50 dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl flex items-center gap-2">
+                  <div className="p-2.5 bg-slate-50 dark:bg-[#0B0F19] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl flex items-center justify-center sm:justify-start gap-2">
                     <span className="text-[#10B981] font-bold">2.</span>
                     <span className="font-semibold text-[#111827] dark:text-white">View Monthly Ledger</span>
                   </div>
@@ -376,15 +379,15 @@ export const PwaShowcase: React.FC<PwaShowcaseProps> = ({ onOpenApp }) => {
 
             {/* Why PWA Beats 80MB Native Apps */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs text-[#6B7280] dark:text-[#94A3B8]">
-              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs">
+              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs text-center sm:text-left">
                 <span className="font-bold text-[#111827] dark:text-white block mb-1">0 KB App Store</span>
                 <span>Installs in 1 second without draining mobile data.</span>
               </div>
-              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs">
+              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs text-center sm:text-left">
                 <span className="font-bold text-[#111827] dark:text-white block mb-1">Zero Permissions</span>
                 <span>No contacts, no SMS scrapers, no camera spying.</span>
               </div>
-              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs">
+              <div className="p-3.5 bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] rounded-xl shadow-xs text-center sm:text-left">
                 <span className="font-bold text-[#111827] dark:text-white block mb-1">Offline Cache</span>
                 <span>Service worker caches app shell for instant loads.</span>
               </div>

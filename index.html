@@ -16,12 +16,28 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
 
-  <!-- Mobile & PWA Capabilities -->
-  <meta name="theme-color" content="#10B981" />
+  <!-- Mobile & PWA Capabilities (Default Light Mode) -->
+  <meta name="theme-color" content="#FAFAFA" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="AutoPay" />
   <meta name="format-detection" content="telephone=no" />
+
+  <!-- Prevent theme flash before React mounts: default to Light Mode unless explicitly set to 'dark' -->
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', '#0B0F19');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />

@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   STUDENT
                 </span>
               </span>
-              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] block font-medium -mt-0.5">
+              <span className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] hidden sm:block font-medium -mt-0.5">
                 Commute Expense Ledger
               </span>
             </div>
@@ -200,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={isAuthenticated ? onNavigateApp : onNavigateLogin}
-              className="p-2 rounded-xl bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] text-[#6B7280] dark:text-[#94A3B8] hover:text-[#111827] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#1E293B] transition-all cursor-pointer"
+              className="hidden sm:inline-flex p-2 rounded-xl bg-white dark:bg-[#121826] border border-[#E5E7EB] dark:border-[#1E293B] text-[#6B7280] dark:text-[#94A3B8] hover:text-[#111827] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#1E293B] transition-all cursor-pointer"
               title={isAuthenticated ? 'Open Commute Ledger' : 'Sign In to Ledger'}
             >
               <Navigation className="w-4 h-4 text-[#10B981] transform rotate-45" />

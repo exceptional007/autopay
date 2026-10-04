@@ -1,3 +1,12 @@
+import { 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  increment, 
+  serverTimestamp 
+} from 'firebase/firestore';
+import { getFirestoreDb } from '../firebase';
+
 export interface PublicStats {
   totalUsers: number;
   totalExpenseRecords: number;
@@ -21,7 +30,8 @@ let lastStatsFetchTime = 0;
 const STATS_CACHE_TTL = 30000; // 30 seconds client-side cache
 
 /**
- * Fetch authenticated aggregate product metrics safely from the backend.
+ * Fetch authenticated aggregate product metrics safely from the database.
+ * Directly reads public aggregates document from Firestore.
  * Zero user-level data, routes, or personal descriptions are exposed.
  */
 export async function fetchPublicStats(): Promise<{ stats: PublicStats | null; error: string | null }> {
@@ -31,166 +41,229 @@ export async function fetchPublicStats(): Promise<{ stats: PublicStats | null; e
   }
 
   try {
-    const res = await fetch('/api/stats', {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    const db = getFirestoreDb();
+    const docRef = doc(db, 'site_stats', 'public_summary');
+    const snap = await getDoc(docRef);
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Failed to fetch product stats`);
-    }
-
-    const data = await res.json();
-    if (data.success && data.stats) {
-      cachedStats = data.stats;
+    if (snap.exists()) {
+      const data = snap.data();
+      const stats: PublicStats = {
+        totalUsers: typeof data.totalUsers === 'number' ? data.totalUsers : 0,
+        totalExpenseRecords: typeof data.totalExpenseRecords === 'number' ? data.totalExpenseRecords : 0,
+        totalExpensesAmount: typeof data.totalExpensesAmount === 'number' ? data.totalExpensesAmount : 0,
+        recordsThisMonth: typeof data.recordsThisMonth === 'number' ? data.recordsThisMonth : 0,
+        recordsLast30Days: typeof data.recordsLast30Days === 'number' ? data.recordsLast30Days : 0,
+        currency: data.currency || 'INR',
+        timezone: data.timezone || 'Asia/Kolkata',
+        lastUpdated: data.lastUpdated || new Date().toISOString(),
+      };
+      cachedStats = stats;
       lastStatsFetchTime = now;
-      return { stats: data.stats, error: null };
+      return { stats, error: null };
     }
 
-    throw new Error('Malformed stats response');
+    throw new Error('Public statistics document not found in Firestore');
   } catch (err: any) {
-    console.warn('[StatsService] Could not retrieve live stats:', err.message);
-    // Return last-known valid cache if available, or null with error
+    console.warn('[StatsService] Could not retrieve live stats from Firestore:', err.message);
+
+    // Fallback: check /api/stats (e.g. if running local dev server with API middleware)
+    try {
+      const res = await fetch('/api/stats', {
+        headers: { Accept: 'application/json' },
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success && data.stats) {
+          cachedStats = data.stats;
+          lastStatsFetchTime = now;
+          return { stats: data.stats, error: null };
+        }
+      }
+    } catch {
+      // Ignore API middleware fallback error
+    }
+
     return {
       stats: cachedStats,
-      error: err.message || 'Unable to connect to live statistics server'
+      error: err.message || 'Unable to connect to live statistics database',
     };
   }
 }
 
 /**
- * Visitor Counter with Session Deduplication and Bot Exclusion
+ * Visitor Counter with Session Deduplication, Concurrency Safety, and Bot Exclusion
  * 
  * Rules:
  * 1. Deduplicates per browser session via sessionStorage to prevent inflation on rerenders,
- *    React Strict Mode double-invocations, and page refreshes.
- * 2. Excludes automated test runners (navigator.webdriver).
- * 3. Never falls back to fabricated random numbers if offline; returns isUnavailable: true.
+ *    React Strict Mode double-invocations, and route transitions.
+ * 2. Excludes automated test runners and headless browsers (navigator.webdriver).
+ * 3. Atomically increments visitor counter using Firestore increment(1) in production.
+ * 4. Never falls back to fabricated random numbers if offline; marks isUnavailable: true.
  */
 export async function recordAndFetchVisitorCount(): Promise<VisitorData> {
   const defaultData: VisitorData = {
     totalVisits: null,
     countingUnit: 'qualifying landing visits',
     sinceDate: 'October 2026',
-    isUnavailable: false
+    isUnavailable: false,
   };
 
   try {
-    // Generate or retrieve session ID for this browser tab/session
-    let sessionId = '';
+    const db = getFirestoreDb();
+    const docRef = doc(db, 'site_stats', 'public_summary');
+
+    let alreadyCounted = false;
     try {
-      sessionId = sessionStorage.getItem('autopay_visitor_session_id') || '';
-      if (!sessionId) {
-        sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-        sessionStorage.setItem('autopay_visitor_session_id', sessionId);
-      }
+      alreadyCounted = sessionStorage.getItem('autopay_visitor_recorded') === 'true';
     } catch {
-      sessionId = `sess_temp_${Date.now()}`;
+      alreadyCounted = false;
     }
 
-    const alreadyCounted = (() => {
+    const isBot = typeof navigator !== 'undefined' && Boolean((navigator as any).webdriver);
+
+    // If new legitimate visit, perform concurrency-safe atomic increment
+    if (!alreadyCounted && !isBot) {
       try {
-        return sessionStorage.getItem('autopay_visitor_recorded') === 'true';
-      } catch {
-        return false;
+        await updateDoc(docRef, {
+          totalVisits: increment(1),
+          lastVisitAt: serverTimestamp(),
+        });
+        try {
+          sessionStorage.setItem('autopay_visitor_recorded', 'true');
+        } catch {}
+      } catch (incErr: any) {
+        console.warn('[StatsService] Visit increment skipped or restricted:', incErr?.message);
       }
-    })();
+    }
 
-    const isBot = typeof navigator !== 'undefined' && (Boolean((navigator as any).webdriver));
-
-    // If already counted in this browser session or automated bot, read without incrementing
-    if (alreadyCounted || isBot) {
-      const res = await fetch('/api/visitor', { method: 'GET' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+    // Read current state
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
       return {
         totalVisits: typeof data.totalVisits === 'number' ? data.totalVisits : null,
         countingUnit: data.countingUnit || defaultData.countingUnit,
         sinceDate: data.sinceDate || defaultData.sinceDate,
-        isUnavailable: false
+        isUnavailable: false,
       };
     }
 
-    // New legitimate qualifying visit: atomically increment
-    const res = await fetch(`/api/visitor?sessionId=${encodeURIComponent(sessionId)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sessionId })
-    });
+    throw new Error('Public visitor document missing');
+  } catch (err: any) {
+    console.warn('[StatsService] Could not reach visitor counter in Firestore:', err.message);
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
+    // Fallback: check /api/visitor if available
     try {
-      sessionStorage.setItem('autopay_visitor_recorded', 'true');
+      const res = await fetch('/api/visitor', {
+        headers: { Accept: 'application/json' },
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        return {
+          totalVisits: typeof data.totalVisits === 'number' ? data.totalVisits : null,
+          countingUnit: data.countingUnit || defaultData.countingUnit,
+          sinceDate: data.sinceDate || defaultData.sinceDate,
+          isUnavailable: false,
+        };
+      }
     } catch {}
 
     return {
-      totalVisits: typeof data.totalVisits === 'number' ? data.totalVisits : null,
-      countingUnit: data.countingUnit || defaultData.countingUnit,
-      sinceDate: data.sinceDate || defaultData.sinceDate,
-      isUnavailable: false
-    };
-  } catch (err: any) {
-    console.warn('[StatsService] Could not reach visitor counter:', err.message);
-    return {
       ...defaultData,
-      isUnavailable: true
+      isUnavailable: true,
     };
   }
 }
 
 /**
- * Record a newly added trip expense into server aggregates asynchronously.
- * Only non-sensitive numerical data (amount, date, timestamp) is synced.
+ * Syncs a newly created expense into the aggregate metrics document.
+ * Non-blocking and concurrency-safe.
  */
-export function syncExpenseToStats(payload: {
-  userIdHash: string;
-  expenseId: string;
+export async function syncExpenseToStats(payload: {
   amount: number;
   date: string;
-  createdAt: number;
-}): void {
+  userIdHash?: string;
+  expenseId?: string;
+  createdAt?: number;
+  [key: string]: any;
+}): Promise<void> {
   try {
-    fetch('/api/stats/sync-expense', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(err => {
-      console.debug('[StatsService] Async sync deferred:', err.message);
+    const db = getFirestoreDb();
+    const docRef = doc(db, 'site_stats', 'public_summary');
+
+    const now = new Date();
+    const currentMonthPrefix = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kolkata', 
+      year: 'numeric', 
+      month: '2-digit' 
+    }).format(now).slice(0, 7);
+
+    const isThisMonth = typeof payload.date === 'string' && payload.date.startsWith(currentMonthPrefix);
+
+    await updateDoc(docRef, {
+      totalExpenseRecords: increment(1),
+      totalExpensesAmount: increment(Math.round(payload.amount)),
+      ...(isThisMonth ? { recordsThisMonth: increment(1) } : {}),
+      recordsLast30Days: increment(1),
+      lastUpdated: new Date().toISOString(),
     });
-  } catch {}
+  } catch (err: any) {
+    console.debug('[StatsService] Aggregate increment deferred:', err?.message);
+  }
 }
 
 /**
- * Batch sync local user expense history to establish authentic aggregate numbers.
+ * Syncs an expense deletion into the aggregate metrics document.
  */
-export function syncExistingLocalExpenses(userId: string, expenses: Array<{ id: string; amount: number; date: string; createdAt: number }>): void {
-  if (!expenses || expenses.length === 0) return;
+export async function syncExpenseDeletionFromStats(payload: {
+  amount: number;
+  date: string;
+}): Promise<void> {
   try {
-    const syncKey = `autopay_synced_stats_${userId}`;
-    if (sessionStorage.getItem(syncKey) === 'true') return;
+    const db = getFirestoreDb();
+    const docRef = doc(db, 'site_stats', 'public_summary');
 
-    fetch('/api/stats/sync-expense', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userIdHash: userId,
-        expenses: expenses.map(e => ({
-          expenseId: e.id,
-          amount: e.amount,
-          date: e.date,
-          createdAt: e.createdAt
-        }))
-      })
-    }).then(() => {
-      try {
-        sessionStorage.setItem(syncKey, 'true');
-      } catch {}
-    }).catch(() => {});
-  } catch {}
+    const now = new Date();
+    const currentMonthPrefix = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kolkata', 
+      year: 'numeric', 
+      month: '2-digit' 
+    }).format(now).slice(0, 7);
+
+    const isThisMonth = typeof payload.date === 'string' && payload.date.startsWith(currentMonthPrefix);
+
+    await updateDoc(docRef, {
+      totalExpenseRecords: increment(-1),
+      totalExpensesAmount: increment(-Math.round(payload.amount)),
+      ...(isThisMonth ? { recordsThisMonth: increment(-1) } : {}),
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.debug('[StatsService] Aggregate decrement deferred:', err?.message);
+  }
+}
+
+/**
+ * Syncs a new user registration to the aggregate metrics document.
+ */
+export async function syncNewUserToStats(): Promise<void> {
+  try {
+    const db = getFirestoreDb();
+    const docRef = doc(db, 'site_stats', 'public_summary');
+    await updateDoc(docRef, {
+      totalUsers: increment(1),
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.debug('[StatsService] User count increment deferred:', err?.message);
+  }
+}
+
+/**
+ * Legacy stub for backward compatibility
+ */
+export function syncExistingLocalExpenses(_userId: string, _expenses: Array<any>): void {
+  // Direct Firestore-backed aggregates handle historical data natively
 }

@@ -9,23 +9,23 @@ interface FaqItem {
 const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What does AutoPay actually track?",
-    answer: "AutoPay is designed specifically for daily commuting and small out-of-pocket expenses (auto-rickshaw fares, metro tokens, chai, canteen lunches, and quick UPI transfers). You enter the amount in ₹, select or type a route (e.g. 'College → Home'), and it immediately updates your monthly budget and analytics."
+    answer: "AutoPay tracks daily commute fares (auto-rickshaws, metro tokens) and small out-of-pocket spends (chai, canteen lunches, quick UPI splits). Enter the fare in ₹, pick your route, and your monthly budget updates immediately."
   },
   {
     question: "Does AutoPay connect to my bank account or scrape SMS messages?",
-    answer: "No. AutoPay never requests bank account access, net banking credentials, or SMS reading permissions. It operates as an intentional 2-second manual ledger that keeps you conscious of daily cash flow without invasive permissions."
+    answer: "No. AutoPay never requests bank credentials or SMS permissions. It is an intentional, two-second manual ledger that keeps you conscious of cash flow without invasive tracking."
   },
   {
     question: "How does the mobile home-screen installation work?",
-    answer: "AutoPay is a Progressive Web App (PWA). On Android or Chromium browsers, click the 'Install App' button to add it directly to your launcher. On iOS (Safari), tap the Share icon in the bottom menu and select 'Add to Home Screen'. It runs in standalone full-screen mode like a native app."
+    answer: "AutoPay is a Progressive Web App (PWA). On Chrome/Android, tap 'Install App'. On iOS Safari, tap Share → 'Add to Home Screen'. It opens full-screen in standalone mode with zero app-store downloads."
   },
   {
     question: "Can I log expenses if I have no internet connection at the station?",
-    answer: "Yes. AutoPay employs a local-first fail-safe. If network connectivity drops while you are in a metro basement or auto stand, entries are safely written to browser localStorage and synchronized when connectivity resumes."
+    answer: "Yes. AutoPay uses local-first storage. If network drops at a metro basement or auto stand, entries save to your device immediately and synchronize once you reconnect."
   },
   {
     question: "How do I export my logs for reimbursements or records?",
-    answer: "From the 'Logs & History' tab, click 'Export PDF'. AutoPay generates a formatted monthly statement detailing each trip date, route description, and fare with an audit total that you can download and submit."
+    answer: "Open 'Logs & History' and tap 'Export PDF'. AutoPay generates an official, itemized PDF statement with dates, routes, and a reconciled total ready for download."
   }
 ];
 

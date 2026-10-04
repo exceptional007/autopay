@@ -13,13 +13,13 @@ export const ThermalReceipt: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[360px] filter drop-shadow-lg select-none">
+    <div className="relative mx-auto w-full max-w-[320px] sm:max-w-[360px] filter drop-shadow-lg select-none">
       {/* Top thermal printer slot */}
       <div className="h-2.5 w-3/4 mx-auto bg-slate-800 dark:bg-slate-700 rounded-t-sm opacity-90 mb-[-1px]"></div>
 
       {/* Main Thermal Receipt Paper Slip (Theme Matched) */}
       <div
-        className={`bg-white dark:bg-[#121826] text-[#111827] dark:text-white p-5 sm:p-6 font-mono text-xs border border-[#E5E7EB] dark:border-[#1E293B] relative rounded-t-sm ${
+        className={`bg-white dark:bg-[#121826] text-[#111827] dark:text-white p-4 sm:p-6 font-mono text-xs border border-[#E5E7EB] dark:border-[#1E293B] relative rounded-t-sm ${
           hasReducedMotion ? '' : 'animate-receipt-print'
         }`}
         style={{

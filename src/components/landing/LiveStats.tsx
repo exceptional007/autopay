@@ -168,8 +168,8 @@ export const LiveStats: React.FC = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 pb-6 border-b border-gray-800/80">
+        {/* Section Header (Centered on mobile, left on desktop) */}
+        <div className="flex flex-col items-center text-center sm:items-start sm:text-left sm:flex-row sm:items-end justify-between gap-4 mb-10 pb-6 border-b border-gray-800/80">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium mb-3">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
@@ -179,12 +179,12 @@ export const LiveStats: React.FC = () => {
               AutoPay in numbers
             </h2>
             <p className="mt-2 text-sm sm:text-base text-gray-400 font-sans max-w-xl">
-              Authentic usage metrics aggregated in real-time. Zero vanity numbers, zero fabricated stats.
+              Authentic usage metrics aggregated in real-time directly from the database.
             </p>
           </div>
 
           {/* Live freshness and timezone indicator */}
-          <div className="flex items-center gap-3 text-xs text-gray-400 font-mono bg-gray-900/60 border border-gray-800 px-3.5 py-2 rounded-xl self-start sm:self-auto">
+          <div className="flex items-center gap-3 text-xs text-gray-400 font-mono bg-gray-900/60 border border-gray-800 px-3.5 py-2 rounded-xl self-center sm:self-auto">
             <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span>IST (Asia/Kolkata)</span>
             {lastUpdatedTime && (
@@ -264,8 +264,8 @@ export const LiveStats: React.FC = () => {
         </div>
 
         {/* Data Integrity & Financial Safeguard Footer Note */}
-        <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500 font-sans px-2">
-          <div className="flex items-center gap-2 text-emerald-400/90 font-medium">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 font-sans px-2 text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2 text-emerald-400/90 font-medium">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>Strict Financial Privacy: Personal routes, individual balances, and transaction notes are never publicly disclosed.</span>
           </div>

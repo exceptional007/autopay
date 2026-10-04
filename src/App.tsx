@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase";
 import { useAppRouter } from "./useAppRouter";
+import { syncNewUserToStats } from "./services/statsService";
 
 // Route-level code splitting: Defer heavy views until their route is active
 const LandingPage = lazy(() =>
@@ -42,8 +43,13 @@ function RouteLoadingFallback() {
 export default function App() {
   const { currentPath, navigate } = useAppRouter();
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("theme");
-    return saved !== "light";
+    try {
+      const saved = localStorage.getItem("theme");
+      // Light mode is the default for every user unless explicitly set to 'dark'
+      return saved === "dark";
+    } catch {
+      return false;
+    }
   });
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
@@ -53,15 +59,33 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authActionLoading, setAuthActionLoading] = useState<boolean>(false);
 
-  // Sync theme with HTML root class
+  // Sync theme with HTML root class and browser theme-color meta tag
   useEffect(() => {
     const root = window.document.documentElement;
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (isDarkMode) {
       root.classList.add("dark");
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute("content", "#0B0F19");
+      }
     } else {
       root.classList.remove("dark");
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute("content", "#FAFAFA");
+      }
     }
   }, [isDarkMode]);
+
+  // Synchronize theme changes across open tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "theme") {
+        setIsDarkMode(e.newValue === "dark");
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Firebase Auth observer with safety timeout to prevent infinite splash screen
   useEffect(() => {
@@ -115,8 +139,8 @@ export default function App() {
       }
     } else {
       // Unauthenticated user:
-      // If attempting to open protected dashboard routes ("/app" or "/dashboard"), redirect to "/login"
-      if (currentPath === "/app" || currentPath === "/dashboard") {
+      // Only redirect to /login if auth=required is explicitly passed
+      if ((currentPath === "/app" || currentPath === "/dashboard") && window.location.search.includes("auth=required")) {
         navigate("/login", true);
       }
     }
@@ -125,7 +149,11 @@ export default function App() {
   const toggleTheme = () => {
     setIsDarkMode((prev) => {
       const next = !prev;
-      localStorage.setItem("theme", next ? "dark" : "light");
+      try {
+        localStorage.setItem("theme", next ? "dark" : "light");
+      } catch (e) {
+        console.warn("Unable to save theme preference:", e);
+      }
       return next;
     });
   };
@@ -144,6 +172,7 @@ export default function App() {
         await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
       } else {
         await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
+        syncNewUserToStats().catch(() => {});
       }
       setEmailInput("");
       setPasswordInput("");
@@ -230,8 +259,8 @@ export default function App() {
     );
   }
 
-  // 3. Authenticated Experience: Once logged in, open the main expense dashboard
-  if (user) {
+  // 3. Authenticated or Direct App Route: Open the main expense dashboard (supports guest mode via local device ID)
+  if (user || currentPath === "/app" || (typeof window !== "undefined" && window.location.search.includes("view=app"))) {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <TrackerView

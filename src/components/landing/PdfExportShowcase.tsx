@@ -137,8 +137,8 @@ export const PdfExportShowcase: React.FC = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className="max-w-2xl mb-12">
+        {/* Section Header (Centered on mobile, left on desktop) */}
+        <div className="max-w-2xl mb-10 sm:mb-12 text-center md:text-left mx-auto md:mx-0">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10B981]/10 text-[#10B981] font-mono text-[11px] font-bold uppercase tracking-wider mb-2 border border-[#10B981]/25">
             <FileText className="w-3.5 h-3.5" />
             <span>[04 / Official Records &amp; Proof]</span>
@@ -150,7 +150,7 @@ export const PdfExportShowcase: React.FC = () => {
             </span>
           </h2>
           <p className="font-sans text-sm sm:text-base text-[#6B7280] dark:text-[#94A3B8] mt-3 leading-relaxed">
-            Need to prove your commute expenses or account for monthly pocket money? AutoPay formats your entire log history into an official, itemized travel report in a fraction of a second.
+            AutoPay formats your entire log history into an itemized travel report in a fraction of a second.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export const PdfExportShowcase: React.FC = () => {
                   <span>Instant Client-Side Generation</span>
                 </div>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-                  Generated entirely inside your browser with <code className="font-mono text-[#10B981] bg-[#10B981]/10 px-1 py-0.5 rounded">jsPDF</code>. No server queue, no wait times, and zero third-party PDF services inspecting your data.
+                  Generated entirely in your browser with <code className="font-mono text-[#10B981] bg-[#10B981]/10 px-1 py-0.5 rounded">jsPDF</code>. Fast, private, with zero server delays.
                 </p>
               </div>
 
@@ -181,7 +181,7 @@ export const PdfExportShowcase: React.FC = () => {
                   <span>Structured Financial Summary</span>
                 </div>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-                  Highlights monthly commute spending, active budget utilization percentage, and chronological trip tallies with accurate route descriptions.
+                  Highlights monthly commute spending, budget utilization, and trip tallies with accurate route notes.
                 </p>
               </div>
 
@@ -193,13 +193,13 @@ export const PdfExportShowcase: React.FC = () => {
                   <span>Reimbursement Ready</span>
                 </div>
                 <p className="font-sans text-xs text-[#6B7280] dark:text-[#94A3B8] leading-relaxed">
-                  Export specific date ranges or filtered routes (e.g. project travels) for hostel allowance, internship reimbursements, or college travel subsidies.
+                  Filter by date or route for hostel allowances, internship claims, and campus travel subsidies.
                 </p>
               </div>
             </div>
 
             {/* Interactive Download Button */}
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col items-center lg:items-start text-center lg:text-left">
               <button
                 type="button"
                 onClick={generateSamplePdf}
@@ -279,7 +279,7 @@ export const PdfExportShowcase: React.FC = () => {
               </div>
 
               {/* Structured PDF Table Preview */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden font-mono text-[10.5px]">
+              <div className="border border-slate-200 rounded-lg overflow-x-auto font-mono text-[10.5px]">
                 <table className="w-full text-left">
                   <thead className="bg-[#0B0F19] text-white text-[9.5px] uppercase">
                     <tr>
